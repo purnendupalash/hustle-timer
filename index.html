@@ -1,0 +1,395 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>hustle timer</title>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; overflow: hidden; background: #000; }
+
+    .wrap {
+      height: 100vh;
+      position: relative;
+      font-family: monospace;
+      background: #000;
+      cursor: pointer;
+      user-select: none;
+      overflow: hidden;
+    }
+
+    .timer-display {
+      font-family: 'Bebas Neue', 'Impact', sans-serif;
+      font-size: 300px;
+      font-weight: 900;
+      color: #fff;
+      line-height: 1;
+      font-variant-numeric: tabular-nums;
+      text-align: center;
+      width: 100%;
+      padding: 0 3vw;
+      transition: color 0.3s;
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+    }
+    .timer-display.paused { color: #333; }
+    .timer-display.danger { color: #e24b4a; }
+
+    .top-controls {
+      position: absolute;
+      top: 2rem;
+      left: 50%;
+      transform: translateX(-50%);
+      transition: opacity 0.4s ease;
+      white-space: nowrap;
+    }
+    .top-controls.hidden { opacity: 0; pointer-events: none; }
+
+    .mode-toggle {
+      display: flex;
+      border: 0.5px solid #333;
+      border-radius: 4px;
+      overflow: hidden;
+    }
+    .mode-btn {
+      background: transparent;
+      border: none;
+      color: #555;
+      font-family: monospace;
+      font-size: 11px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      padding: 8px 22px;
+      cursor: pointer;
+      transition: background 0.2s, color 0.2s;
+    }
+    .mode-btn.active { background: #fff; color: #000; }
+    .mode-btn:not(.active):hover { color: #aaa; }
+
+    .quote-wrap {
+      position: absolute;
+      top: calc(50% + 170px);
+      left: 50%;
+      transform: translateX(-50%);
+      width: 100%;
+      max-width: 560px;
+      text-align: center;
+      padding: 0 2vw;
+      transition: opacity 0.4s;
+    }
+    .quote-wrap.fading { opacity: 0; }
+    .quote-text {
+      font-family: Georgia, serif;
+      font-size: 15px;
+      color: #555;
+      line-height: 1.6;
+      font-style: italic;
+    }
+    .done-msg {
+      font-size: 13px;
+      color: #e24b4a;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      margin-top: 0.4rem;
+    }
+
+    .bottom-controls {
+      position: absolute;
+      bottom: 2.5rem;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0;
+      transition: opacity 0.4s ease;
+      white-space: nowrap;
+    }
+    .bottom-controls.hidden { opacity: 0; pointer-events: none; }
+
+    .countdown-input {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 1rem;
+    }
+    .time-inp {
+      background: transparent;
+      border: none;
+      border-bottom: 0.5px solid #333;
+      color: #fff;
+      font-family: monospace;
+      font-size: 13px;
+      width: 52px;
+      text-align: center;
+      padding: 4px 0;
+      outline: none;
+      cursor: text;
+    }
+    .time-inp:focus { border-bottom-color: #fff; }
+    .time-inp::placeholder { color: #444; }
+    .inp-label { font-size: 11px; color: #444; letter-spacing: 0.1em; }
+
+    .controls {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+    }
+    .btn {
+      background: transparent;
+      border: 0.5px solid #333;
+      color: #888;
+      font-family: monospace;
+      font-size: 12px;
+      letter-spacing: 0.08em;
+      padding: 10px 24px;
+      border-radius: 4px;
+      cursor: pointer;
+      text-transform: lowercase;
+      transition: border-color 0.2s, color 0.2s;
+    }
+    .btn:hover { border-color: #888; color: #fff; }
+    .btn.primary { border-color: #fff; color: #fff; }
+    .btn:disabled { border-color: #222; color: #333; cursor: default; }
+
+    .lap-list {
+      margin-top: 1rem;
+      width: 300px;
+      max-height: 80px;
+      overflow-y: auto;
+      scrollbar-width: none;
+    }
+    .lap-item {
+      display: flex;
+      justify-content: space-between;
+      font-size: 12px;
+      color: #444;
+      padding: 4px 0;
+      border-bottom: 0.5px solid #111;
+      font-variant-numeric: tabular-nums;
+    }
+    .lap-item.latest { color: #888; }
+
+    .hint {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 10px;
+      color: #222;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      transition: opacity 0.6s;
+      white-space: nowrap;
+    }
+    .hint.fade { opacity: 0; }
+  </style>
+</head>
+<body>
+  <div class="wrap" id="wrap">
+
+    <div class="top-controls" id="topControls">
+      <div class="mode-toggle">
+        <button class="mode-btn active" id="modeStop" onclick="setMode('stopwatch')">stopwatch</button>
+        <button class="mode-btn" id="modeCount" onclick="setMode('countdown')">countdown</button>
+      </div>
+    </div>
+
+    <div class="timer-display paused" id="display">00:00:00</div>
+
+    <div class="quote-wrap" id="quoteWrap">
+      <div class="quote-text" id="quoteText"></div>
+      <div class="done-msg" id="doneMsg"></div>
+    </div>
+
+    <div class="bottom-controls" id="bottomControls">
+      <div class="countdown-input" id="cdInput" style="display:none;">
+        <input class="time-inp" id="inpH" type="number" min="0" max="23" placeholder="00">
+        <span class="inp-label">h</span>
+        <input class="time-inp" id="inpM" type="number" min="0" max="59" placeholder="00">
+        <span class="inp-label">m</span>
+        <input class="time-inp" id="inpS" type="number" min="0" max="59" placeholder="00">
+        <span class="inp-label">s</span>
+      </div>
+      <div class="controls">
+        <button class="btn" id="lapBtn" onclick="lap()" disabled>lap</button>
+        <button class="btn primary" id="startBtn" onclick="toggle()">start</button>
+        <button class="btn" onclick="reset()">reset</button>
+      </div>
+      <div class="lap-list" id="lapList"></div>
+    </div>
+
+  </div>
+
+  <div class="hint" id="hint">click anywhere to hide buttons</div>
+
+  <script>
+    const quotes = [
+      "Do the work. Especially when you don't feel like it.",
+      "The secret of getting ahead is getting started.",
+      "You don't have to be great to start, but you have to start to be great.",
+      "Work like there is someone working 24 hours a day to take it away from you.",
+      "It's not about having time. It's about making time.",
+      "The pain of discipline is far less than the pain of regret.",
+      "Stop wishing. Start doing.",
+      "One day or day one. You decide.",
+      "Dreams don't work unless you do.",
+      "Don't watch the clock; do what it does. Keep going.",
+      "Success is the sum of small efforts repeated day in and day out.",
+      "Push yourself because no one else is going to do it for you.",
+      "Great things never come from comfort zones.",
+      "It always seems impossible until it's done.",
+      "Hustle until your haters ask if you're hiring.",
+      "Show up. Do the work. Trust the process.",
+      "Every expert was once a beginner. Keep going.",
+      "The only place success comes before work is in the dictionary.",
+      "Discipline is choosing between what you want now and what you want most.",
+      "You are one decision away from a completely different life.",
+    ];
+
+    let mode = 'stopwatch', elapsed = 0, countdownTotal = 0, startTime = null;
+    let running = false, interval = null, lapCount = 0, lapStart = 0;
+    let quoteIndex = Math.floor(Math.random() * quotes.length);
+    let finished = false, uiVisible = true;
+
+    function fmt(ms) {
+      const t = Math.max(0, Math.floor(ms / 1000));
+      const h = Math.floor(t / 3600), m = Math.floor((t % 3600) / 60), s = t % 60;
+      return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+    }
+
+    document.addEventListener('touchmove', e => e.preventDefault(), { passive: false });
+    document.addEventListener('wheel', e => e.preventDefault(), { passive: false });
+
+    document.getElementById('wrap').addEventListener('click', function(e) {
+      if (e.target.closest('button, input')) return;
+      uiVisible = !uiVisible;
+      document.getElementById('topControls').classList.toggle('hidden', !uiVisible);
+      document.getElementById('bottomControls').classList.toggle('hidden', !uiVisible);
+      const hint = document.getElementById('hint');
+      hint.textContent = uiVisible ? 'click anywhere to hide buttons' : 'click anywhere to show buttons';
+      hint.classList.remove('fade');
+      clearTimeout(hint._t);
+      hint._t = setTimeout(() => hint.classList.add('fade'), 1600);
+    });
+
+    function setMode(m) {
+      if (running) return;
+      mode = m; reset();
+      document.getElementById('modeStop').classList.toggle('active', m === 'stopwatch');
+      document.getElementById('modeCount').classList.toggle('active', m === 'countdown');
+      document.getElementById('cdInput').style.display = m === 'countdown' ? 'flex' : 'none';
+      document.getElementById('lapBtn').style.display = m === 'stopwatch' ? '' : 'none';
+      document.getElementById('lapList').style.display = m === 'stopwatch' ? '' : 'none';
+      document.getElementById('display').textContent = '00:00:00';
+    }
+
+    function getCountdownMs() {
+      const h = parseInt(document.getElementById('inpH').value) || 0;
+      const m = parseInt(document.getElementById('inpM').value) || 0;
+      const s = parseInt(document.getElementById('inpS').value) || 0;
+      return (h * 3600 + m * 60 + s) * 1000;
+    }
+
+    function tick() {
+      if (mode === 'stopwatch') {
+        elapsed = Date.now() - startTime;
+        document.getElementById('display').textContent = fmt(elapsed);
+      } else {
+        const remaining = countdownTotal - (Date.now() - startTime);
+        if (remaining <= 0) {
+          document.getElementById('display').textContent = '00:00:00';
+          document.getElementById('display').className = 'timer-display danger';
+          document.getElementById('doneMsg').textContent = '— get back to work —';
+          document.getElementById('startBtn').textContent = 'start';
+          clearInterval(interval); running = false; finished = true; return;
+        }
+        document.getElementById('display').textContent = fmt(remaining);
+        if (remaining < 10000) {
+          document.getElementById('display').className = 'timer-display danger';
+          document.getElementById('display').style.color = '';
+        } else if (remaining < 60000) {
+          document.getElementById('display').className = 'timer-display';
+          document.getElementById('display').style.color = '#e8a838';
+        } else {
+          document.getElementById('display').className = 'timer-display running';
+          document.getElementById('display').style.color = '';
+        }
+      }
+    }
+
+    function toggle() {
+      if (finished) { reset(); return; }
+      if (!running) {
+        if (mode === 'countdown' && !startTime) {
+          countdownTotal = getCountdownMs();
+          if (countdownTotal <= 0) return;
+        }
+        startTime = Date.now();
+        if (mode === 'countdown' && elapsed) { countdownTotal = elapsed; elapsed = 0; }
+        interval = setInterval(tick, 100); running = true;
+        document.getElementById('startBtn').textContent = 'pause';
+        document.getElementById('display').className = 'timer-display running';
+        if (mode === 'stopwatch') {
+          document.getElementById('lapBtn').disabled = false;
+          lapStart = elapsed; startTime = Date.now() - elapsed;
+        }
+        if (mode === 'countdown') document.getElementById('cdInput').style.display = 'none';
+      } else {
+        elapsed = mode === 'countdown' ? countdownTotal - (Date.now() - startTime) : Date.now() - startTime;
+        startTime = null; clearInterval(interval); running = false;
+        document.getElementById('startBtn').textContent = 'start';
+        document.getElementById('display').className = 'timer-display paused';
+        document.getElementById('display').style.color = '';
+      }
+    }
+
+    function reset() {
+      clearInterval(interval);
+      running = false; finished = false; elapsed = 0; startTime = null;
+      countdownTotal = 0; lapCount = 0; lapStart = 0;
+      document.getElementById('display').textContent = '00:00:00';
+      document.getElementById('display').className = 'timer-display paused';
+      document.getElementById('display').style.color = '';
+      document.getElementById('startBtn').textContent = 'start';
+      document.getElementById('lapBtn').disabled = true;
+      document.getElementById('doneMsg').textContent = '';
+      document.getElementById('lapList').innerHTML = '';
+      if (mode === 'countdown') document.getElementById('cdInput').style.display = 'flex';
+      nextQuote();
+    }
+
+    function lap() {
+      if (!running || mode !== 'stopwatch') return;
+      lapCount++;
+      const now = Date.now() - startTime, split = now - lapStart;
+      lapStart = now;
+      const list = document.getElementById('lapList');
+      if (list.firstChild) list.firstChild.classList.remove('latest');
+      const item = document.createElement('div');
+      item.className = 'lap-item latest';
+      item.innerHTML = `<span>lap ${lapCount}</span><span>${fmt(split)}</span>`;
+      list.insertBefore(item, list.firstChild);
+    }
+
+    function nextQuote() {
+      const wrap = document.getElementById('quoteWrap');
+      wrap.classList.add('fading');
+      setTimeout(() => {
+        quoteIndex = (quoteIndex + 1) % quotes.length;
+        document.getElementById('quoteText').textContent = `"${quotes[quoteIndex]}"`;
+        wrap.classList.remove('fading');
+      }, 400);
+    }
+
+    document.getElementById('quoteText').textContent = `"${quotes[quoteIndex]}"`;
+    setInterval(nextQuote, 30000);
+    setTimeout(() => document.getElementById('hint').classList.add('fade'), 2500);
+  </script>
+</body>
+</html>
+
