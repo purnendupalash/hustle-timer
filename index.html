@@ -9,7 +9,6 @@
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     html, body { height: 100%; overflow: hidden; background: #000; }
-
     .wrap {
       height: 100vh;
       position: relative;
@@ -19,7 +18,6 @@
       user-select: none;
       overflow: hidden;
     }
-
     .timer-display {
       font-family: 'Bebas Neue', 'Impact', sans-serif;
       font-size: 300px;
@@ -36,9 +34,11 @@
       left: 50%;
       transform: translate(-50%, -50%);
     }
+    @media (max-width: 480px) {
+      .timer-display { font-size: 18vw; }
+    }
     .timer-display.paused { color: #333; }
     .timer-display.danger { color: #e24b4a; }
-
     .top-controls {
       position: absolute;
       top: 2rem;
@@ -48,7 +48,6 @@
       white-space: nowrap;
     }
     .top-controls.hidden { opacity: 0; pointer-events: none; }
-
     .mode-toggle {
       display: flex;
       border: 0.5px solid #333;
@@ -69,7 +68,6 @@
     }
     .mode-btn.active { background: #fff; color: #000; }
     .mode-btn:not(.active):hover { color: #aaa; }
-
     .quote-wrap {
       position: absolute;
       top: calc(50% + 170px);
@@ -81,6 +79,9 @@
       padding: 0 2vw;
       transition: opacity 0.4s;
     }
+    @media (max-width: 480px) {
+      .quote-wrap { top: calc(50% + 10vw); }
+    }
     .quote-wrap.fading { opacity: 0; }
     .quote-text {
       font-family: Georgia, serif;
@@ -89,6 +90,9 @@
       line-height: 1.6;
       font-style: italic;
     }
+    @media (max-width: 480px) {
+      .quote-text { font-size: 13px; }
+    }
     .done-msg {
       font-size: 13px;
       color: #e24b4a;
@@ -96,7 +100,6 @@
       text-transform: uppercase;
       margin-top: 0.4rem;
     }
-
     .bottom-controls {
       position: absolute;
       bottom: 2.5rem;
@@ -105,12 +108,10 @@
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 0;
       transition: opacity 0.4s ease;
       white-space: nowrap;
     }
     .bottom-controls.hidden { opacity: 0; pointer-events: none; }
-
     .countdown-input {
       display: flex;
       align-items: center;
@@ -133,7 +134,6 @@
     .time-inp:focus { border-bottom-color: #fff; }
     .time-inp::placeholder { color: #444; }
     .inp-label { font-size: 11px; color: #444; letter-spacing: 0.1em; }
-
     .controls {
       display: flex;
       gap: 12px;
@@ -155,7 +155,6 @@
     .btn:hover { border-color: #888; color: #fff; }
     .btn.primary { border-color: #fff; color: #fff; }
     .btn:disabled { border-color: #222; color: #333; cursor: default; }
-
     .lap-list {
       margin-top: 1rem;
       width: 300px;
@@ -173,7 +172,6 @@
       font-variant-numeric: tabular-nums;
     }
     .lap-item.latest { color: #888; }
-
     .hint {
       position: fixed;
       bottom: 20px;
@@ -194,8 +192,8 @@
 
     <div class="top-controls" id="topControls">
       <div class="mode-toggle">
-        <button class="mode-btn active" id="modeStop" onclick="setMode('stopwatch')">stopwatch</button>
-        <button class="mode-btn" id="modeCount" onclick="setMode('countdown')">countdown</button>
+        <button class="mode-btn active" id="modeCount" onclick="setMode('countdown')">countdown</button>
+        <button class="mode-btn" id="modeStop" onclick="setMode('stopwatch')">stopwatch</button>
       </div>
     </div>
 
@@ -207,7 +205,7 @@
     </div>
 
     <div class="bottom-controls" id="bottomControls">
-      <div class="countdown-input" id="cdInput" style="display:none;">
+      <div class="countdown-input" id="cdInput">
         <input class="time-inp" id="inpH" type="number" min="0" max="23" placeholder="00">
         <span class="inp-label">h</span>
         <input class="time-inp" id="inpM" type="number" min="0" max="59" placeholder="00">
@@ -216,11 +214,11 @@
         <span class="inp-label">s</span>
       </div>
       <div class="controls">
-        <button class="btn" id="lapBtn" onclick="lap()" disabled>lap</button>
+        <button class="btn" id="lapBtn" onclick="lap()" disabled style="display:none;">lap</button>
         <button class="btn primary" id="startBtn" onclick="toggle()">start</button>
         <button class="btn" onclick="reset()">reset</button>
       </div>
-      <div class="lap-list" id="lapList"></div>
+      <div class="lap-list" id="lapList" style="display:none;"></div>
     </div>
 
   </div>
@@ -251,7 +249,7 @@
       "You are one decision away from a completely different life.",
     ];
 
-    let mode = 'stopwatch', elapsed = 0, countdownTotal = 0, startTime = null;
+    let mode = 'countdown', elapsed = 0, countdownTotal = 0, startTime = null;
     let running = false, interval = null, lapCount = 0, lapStart = 0;
     let quoteIndex = Math.floor(Math.random() * quotes.length);
     let finished = false, uiVisible = true;
@@ -280,8 +278,8 @@
     function setMode(m) {
       if (running) return;
       mode = m; reset();
-      document.getElementById('modeStop').classList.toggle('active', m === 'stopwatch');
       document.getElementById('modeCount').classList.toggle('active', m === 'countdown');
+      document.getElementById('modeStop').classList.toggle('active', m === 'stopwatch');
       document.getElementById('cdInput').style.display = m === 'countdown' ? 'flex' : 'none';
       document.getElementById('lapBtn').style.display = m === 'stopwatch' ? '' : 'none';
       document.getElementById('lapList').style.display = m === 'stopwatch' ? '' : 'none';
@@ -392,4 +390,3 @@
   </script>
 </body>
 </html>
-
