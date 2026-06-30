@@ -1,0 +1,21 @@
+{
+  "name": "hustle-timer",
+  "version": "1.0.0",
+  "description": "A simple countdown and stopwatch timer with motivational quotes",
+  "main": "index.html",
+  "scripts": {
+    "dev": "npx serve .",
+    "preview": "npx serve ."
+  },
+  "keywords": [
+    "timer",
+    "stopwatch",
+    "countdown",
+    "productivity"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "@vercel/analytics": "^1.1.1"
+  }
+}
